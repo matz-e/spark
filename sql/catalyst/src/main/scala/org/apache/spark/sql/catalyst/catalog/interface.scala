@@ -22,6 +22,7 @@ import java.util.Date
 
 import scala.collection.mutable
 
+import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.AnalysisException
 import org.apache.spark.sql.catalyst.{FunctionIdentifier, InternalRow, TableIdentifier}
 import org.apache.spark.sql.catalyst.analysis.MultiInstanceRelation
@@ -162,9 +163,12 @@ case class BucketSpec(
     numBuckets: Int,
     bucketColumnNames: Seq[String],
     sortColumnNames: Seq[String]) {
-  if (numBuckets <= 0 || numBuckets >= 100000) {
+  def conf: SQLConf = SQLConf.get
+
+  if (numBuckets <= 0 || numBuckets > conf.bucketingMaxBuckets) {
     throw new AnalysisException(
-      s"Number of buckets should be greater than 0 but less than 100000. Got `$numBuckets`")
+      s"Number of buckets should be greater than 0 but less than spark.sql.bucketing.maxBuckets " +
+        s"(`${conf.bucketingMaxBuckets}`). Got `$numBuckets`")
   }
 
   override def toString: String = {
